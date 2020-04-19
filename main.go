@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"io/ioutil"
 	"encoding/json"
+	b64 "encoding/base64"
+	"strconv"
 )
 
 type Client struct {
@@ -12,15 +14,27 @@ type Client struct {
 	Pin string
 }
 
-type NewClientPayload struct {
+type NewClientRequestPayload struct {
 	Phone string
 	Pin string
 	Retyped_pin string
 }
 
-type NewLoginPayload struct {
+type NewClientResponsePayload struct {
+	Error bool `json:"error"`
+	ClientId int `json:"client_id"`
+	Token string `json:"token"`
+}
+
+type NewLoginRequestPayload struct {
 	Phone string
 	Pin string
+}
+
+type NewLoginResponsePayload struct {
+	Error bool `json:"error"`
+	ClientId int `json:"client_id"`
+	Token string `json:"token"`
 }
 
 type JsonResponse struct {
@@ -72,7 +86,7 @@ func handleNewLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var payload NewLoginPayload
+	var payload NewLoginRequestPayload
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		http.Error(w, "400 bad request", http.StatusBadRequest)
@@ -80,7 +94,9 @@ func handleNewLogin(w http.ResponseWriter, r *http.Request) {
 
 	for _, v := range HumbleClientsStorage {
 		if v.Phone == payload.Phone && v.Pin == payload.Pin {
-			sendJsonResponse(w, JsonResponse{ v }, 200)
+			mockJson := `{ "id":"` + strconv.Itoa(v.Id) + `", "phone":"` + v.Phone + `", "pin":"` + v.Pin + `" }`
+			token := b64.URLEncoding.EncodeToString([]byte(mockJson))
+			sendJsonResponse(w, JsonResponse{ NewLoginResponsePayload{ false, v.Id, token } }, 200)
 			return
 		}
 	}
@@ -95,7 +111,7 @@ func handleNewClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var payload NewClientPayload
+	var payload NewClientRequestPayload
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		http.Error(w, "400 bad request", http.StatusBadRequest)
@@ -113,7 +129,9 @@ func handleNewClient(w http.ResponseWriter, r *http.Request) {
 	client := Client{ newClientId, payload.Phone, payload.Pin }
 	HumbleClientsStorage = append(HumbleClientsStorage, client)
 
-	sendJsonResponse(w, JsonResponse{ client }, 200)
+	mockJson := `{ "id":"` + strconv.Itoa(client.Id) + `", "phone":"` + client.Phone + `", "pin":"` + client.Pin + `" }`
+	token := b64.URLEncoding.EncodeToString([]byte(mockJson))
+	sendJsonResponse(w, JsonResponse{ NewClientResponsePayload{ false, client.Id, token } }, 200)
 	return
 }
 

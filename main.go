@@ -2,9 +2,27 @@ package main
 
 import (
 	"net/http"
+	"io/ioutil"
 )
 
 func handleRootPath(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "404 not found", http.StatusNotFound)
+		return
+	}
+
+	if r.URL.Path == "/" {
+		body, err := ioutil.ReadFile("public/index.html")
+		if err != nil {
+			http.Error(w, "404 not found", http.StatusNotFound)
+			return
+		}
+		w.Write([]byte(body))
+		return
+	}
+
+	http.Error(w, "404 not found", http.StatusNotFound)
+	return
 }
 
 func handleNewLogin(w http.ResponseWriter, r *http.Request) {

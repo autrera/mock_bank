@@ -1,0 +1,340 @@
+<html>
+    <head>
+        <title>The Bank</title>
+        <style>
+            body {
+                font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
+                font-size: 1rem;
+                font-weight: 400;
+                line-height: 1.5;
+                color: #212529;
+                text-align: left;
+            }
+            h1 {
+            }
+            p {
+            }
+            label {
+                display: inline-block;
+                margin-bottom: 0.5rem;
+            }
+            .btn {
+                display: inline-block;
+                color: #212529;
+                text-align: center;
+                vertical-align: middle;
+                cursor: pointer;
+                user-select: none;
+                background-color: transparent;
+                border: 1px solid transparent;
+                line-height: 1.5;
+                border-radius: .3rem;
+                padding: .375rem .75rem;
+                font-weight: 600;
+                font-size: 1.25rem;
+            }
+            .btn-primary {
+                color: #7952b3;
+                border-color: #7952b3;
+            }
+            .btn-container {
+                text-align: right;
+            }
+            .hide {
+                display: none;
+            }
+            .box {
+                width: 400px;
+                margin: 0 auto;
+                background: white;
+                box-shadow: black;
+                border: 1px solid rgba(0, 0, 0, 0.12);
+                border-radius: .25rem;
+                padding: 1rem;
+            }
+            .form {
+                text-align: left;
+            }
+            .form-group {
+                margin-bottom: 1rem;
+            }
+            .form-control {
+                display: block;
+                width: 100%;
+                height: calc(1.5em + .75rem + 2px);
+                padding: .375rem .75rem;
+                font-size: 1rem;
+                font-weight: 400;
+                line-height: 1.5;
+                color: #495057;
+                background-color: #fff;
+                background-clip: padding-box;
+                border: 1px solid #ced4da;
+                border-radius: .25rem;
+            }
+            .text-muted {
+                color: #6c757d;
+            }
+            .login {
+                text-align: center;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="login box hide">
+            <h1>Welcome to the Bank</h1>
+            <p>Please, login to continue</p>
+            <div class="form">
+                <div class="form-group">
+                    <label for="user-phone">Phone</label>
+                    <input type="tel" class="form-control" id="user-phone" aria-describedby="emailHelp">
+                    <small id="emailHelp" class="text-muted">We'll never share your phone with anyone else.</small>
+                </div>
+                <div class="form-group">
+                    <label for="user-pin">PIN</label>
+                    <input type="password" class="form-control" id="user-pin">
+                </div>
+                <div class="btn-container">
+                    <button onclick="showOnly('.signup')" class="btn btn-primary">Sign up</button>
+                    <button onclick="login()" class="btn btn-primary">Login</button>
+                </div>
+            </div>
+        </div>
+        <div class="signup box hide">
+            <h1>Thank you for choosing us</h1>
+            <p>Please, fill the following form to create your account</p>
+            <div class="form">
+                <div class="form-group">
+                    <label for="new-user-phone">Phone</label>
+                    <input type="tel" class="form-control" id="new-user-phone" aria-describedby="emailHelp">
+                    <small id="emailHelp" class="text-muted">We'll never share your email with anyone else.</small>
+                </div>
+                <div class="form-group">
+                    <label for="new-user-pin">PIN</label>
+                    <input type="password" class="form-control" id="new-user-pin">
+                </div>
+                <div class="form-group">
+                    <label for="new-user-retype-pin">Retype PIN</label>
+                    <input type="password" class="form-control" id="new-user-retype-pin">
+                </div>
+                <div class="btn-container">
+                    <button onclick="showOnly('.login')" class="btn">Cancel</button>
+                    <button onclick="signUp()" class="btn btn-primary">Sign up</button>
+                </div>
+            </div>
+        </div>
+        <div class="balance box hide">
+            <div class="balance-container">
+                <p>Loading your balance...</p>
+            </div>
+            <div class="btn-container">
+                <button class="btn" onclick="logout()">Logout</button>
+                <button class="btn btn-primary" onclick="showOnly('.transfer')">Transfer</button>
+            </div>
+        </div>
+        <div class="transfer box hide">
+            <h1>Let's do a money transfer</h1>
+            <p>Please, fill the following form to transfer some money</p>
+            <div class="form">
+                <div class="form-group">
+                    <label for="transfer-amount">Amount</label>
+                    <input type="number" class="form-control" id="transfer-amount" aria-describedby="emailHelp">
+                </div>
+                <div class="form-group">
+                    <label for="receiver-user-phone">Recipient phone</label>
+                    <input type="tel" class="form-control" id="receiver-user-phone" aria-describedby="emailHelp">
+                    <small id="emailHelp" class="text-muted">Please, type the phone number of the account to receive the money</small>
+                </div>
+                <div class="form-group">
+                    <label for="transfer-user-pin">PIN</label>
+                    <input type="password" class="form-control" id="transfer-user-pin">
+                    <small id="emailHelp" class="text-muted">Type your pin to sign the transfer</small>
+                </div>
+                <div class="btn-container">
+                    <button onclick="showOnly('.balance')" class="btn">Cancel</button>
+                    <button onclick="sendTheMoney()" class="btn btn-primary">Send</button>
+                </div>
+            </div>
+        </div>
+    </body>
+
+    <script>
+        const showOnly = (elementSelector) => {
+            const elements = document.querySelectorAll('.box');
+            elements.forEach(element => {
+                element.classList.add('hide');
+            });
+
+            const element = document.querySelector(elementSelector);
+            element.classList.remove("hide");
+        }
+
+        const loadBalance = () => {
+            fetch('/balance', {
+                headers: {
+                    'Authorization': localStorage.getItem('token'),
+                }
+            })
+            .then((response) => {
+                return response.json();
+            })
+            .then((data) => {
+                let transferContent = "<table><tr><th>Amount:</th><th>Created at:</th></tr>";
+                data.transfers.forEach(transfer => {
+                    transferContent += getHTMLForTransfer(transfer); 
+                });
+                transferContent += "</table>";
+                transferContent += "<p>Balance: $" + data.balance + "</p>";
+                document.querySelector('.balance-container').innerHTML = transferContent;
+            });
+        }
+
+        const getHTMLForTransfer = (transfer) => {
+            html = "<tr>";
+            html += "<td>" + transfer.amount  + "</td>";
+            html += "<td>" + transfer.created_at + "</td>";
+            html += "</tr>";
+            return html;
+        }
+
+        const signUp = () => {
+            const phone = document.querySelector('#new-user-phone').value;
+            const pin = document.querySelector('#new-user-pin').value;
+            const retyped_pin = document.querySelector('#new-user-retype-pin').value;
+
+            fetch('/clients', {
+                method: "POST",
+                body: JSON.stringify({ phone: phone, pin: pin, retyped_pin: retyped_pin })
+            })
+            .then(response => {
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    switch (data.error_code) {
+                        case 'PHONE_MISSING':
+                            alert("Please type the phone");
+                            break;
+                        case 'PIN_MISSING':
+                            alert("Please type the pin number");
+                            break;
+                        case 'PINS_DONT_MATCH':
+                            alert("The typed pins do not match");
+                            break;
+                        case 'NUMBER_ALREADY_REGISTERED':
+                            alert("The phone you tried to register is already in use");
+                            break;
+                        default:
+                            alert("Unable to sign up. Please, try again");
+                            break;
+                    }
+                } else {
+                    showOnly('.balance');
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('client_id', data.client_id);
+                    loadBalance();
+                }
+            });
+        }
+
+        const login = () => {
+            const phone = document.querySelector('#user-phone').value;
+            const pin = document.querySelector('#user-pin').value;
+            fetch('/login', {
+                method: "POST",
+                body: JSON.stringify({ phone: phone, pin: pin })
+            })
+            .then((response) => {
+                return response.json();
+            })
+            .then((data) => {
+                if (data.error) {
+                    switch (data.error_code) {
+                        case 'PHONE_MISSING':
+                            alert("Please type the phone");
+                            break;
+                        case 'PIN_MISSING':
+                            alert("Please type the pin number");
+                            break;
+                        default:
+                            alert("Unable to login, please try again");
+                            break;
+                    }
+                } else {
+                    showOnly('.balance');
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('client_id', data.client_id);
+                    loadBalance();
+                }
+            });
+        }
+
+        const logout = () => {
+            localStorage.clear();
+            showOnly('.login');
+        }
+
+        const sendTheMoney = () => {
+            const amount = document.querySelector('#transfer-amount').value;
+            const phone = document.querySelector('#receiver-user-phone').value;
+            const pin = document.querySelector('#transfer-user-pin').value;
+            fetch('/transfers', {
+                method: "POST",
+                headers: {
+                    Authorization: localStorage.getItem('token'),
+                },
+                body: JSON.stringify({ amount: amount, phone: phone, pin: pin })
+            })
+            .then((response) => {
+                return response.json();
+            })
+            .then((data) => {
+                if (data.error) {
+                    switch (data.error_code) {
+                        case 'AMOUNT_MISSING':
+                            alert("Please type the amount to transfer");
+                            break;
+                        case 'PHONE_MISSING':
+                            alert("Please type the phone");
+                            break;
+                        case 'PIN_MISSING':
+                            alert("Please type the pin number");
+                            break;
+                        case 'RECEIVER_CLIENT_DOES_NOT_EXIST':
+                            alert('The client to receive the transfer does not exist.');
+                            break;
+                        case 'UNABLE_TO_COMPLETE_TRANSFER':
+                            alert('Unable to complete the trasfer. Please, try again.');
+                            break;
+                        case 'SENDER_CANT_BE_RECEIVER':
+                            alert("You can't send money to your account from your account.");
+                            break;
+                        case 'NOT_ENOUGH_BALANCE':
+                            alert("Not enough balance available to complete the transfer");
+                            break;
+                        case 'BAD_PIN':
+                            alert('Wrong pin.');
+                            break;
+                        default:
+                            alert('Unable to complete the trasfer. Please, try again.');
+                            break;
+                    }
+                } else {
+                    showOnly('.balance');
+                    loadBalance();
+                }
+            });
+        }
+
+        window.onload = function () {
+            const token = localStorage.getItem('token');
+            if (token) {
+                showOnly('.balance');
+                loadBalance();
+            } else {
+                showOnly('.login');
+            }
+        }
+    </script>
+</html>

@@ -6,9 +6,16 @@ import (
 	"encoding/json"
 	b64 "encoding/base64"
 	"strconv"
+	"strings"
+	// "fmt"
 )
 
 type Client struct {
+	Id int `json:"id,string"`
+	Phone string `json:"phone"`
+	Pin string `json:"pin"`
+}
+
 type Transfer struct {
 	Id int
 	Amount int
@@ -46,6 +53,12 @@ type JsonResponse struct {
 type ErrorPayload struct {
 	Error bool `json:"error"`
 	ErrorCode string `json:"error_code"`
+}
+
+type BalancePayload struct {
+	Error bool `json:"error"`
+	Balance int `json:"balance"`
+	Transfers []Transfer `json:"transfers"` 
 }
 
 var HumbleClientsStorage []Client
@@ -146,6 +159,30 @@ func handleNewTransfers(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleGetBalance(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+	decodedString, _ := b64.URLEncoding.DecodeString(token)
+
+	var client Client
+	err := json.NewDecoder(strings.NewReader(string(decodedString))).Decode(&client)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	amount := 0
+	for _, v := range HumbleTransfersStorage {
+		if v.ClientId == client.Id {
+			amount += v.Amount
+		}
+		if v.CreatedBy == client.Id {
+			amount -= v.Amount
+		}
+	}
+	amount = amount / 100
+
+	transfers := []Transfer{}
+
+	sendJsonResponse(w, JsonResponse{ BalancePayload{ false, amount, transfers } }, 200)
 }
 
 func main() {

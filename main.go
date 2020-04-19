@@ -23,12 +23,28 @@ type NewLoginPayload struct {
 	Pin string
 }
 
+type JsonResponse struct {
+	Payload interface{}
+}
+
 type ErrorPayload struct {
 	Error bool `json:"error"`
 	ErrorCode string `json:"error_code"`
 }
 
 var HumbleClientsStorage []Client
+
+func sendJsonResponse(w http.ResponseWriter, response JsonResponse, httpCode int) {
+	js, err := json.Marshal(response.Payload)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(httpCode)
+	w.Write(js)
+	return
+}
 
 func handleRootPath(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
@@ -64,26 +80,12 @@ func handleNewLogin(w http.ResponseWriter, r *http.Request) {
 
 	for _, v := range HumbleClientsStorage {
 		if v.Phone == payload.Phone && v.Pin == payload.Pin {
-			js, err := json.Marshal(v)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(200)
-			w.Write(js)
+			sendJsonResponse(w, JsonResponse{ v }, 200)
 			return
 		}
 	}
 
-	js, err := json.Marshal(ErrorPayload{ true, "UNAUTHORIZED" })
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-	w.Write(js)
+	sendJsonResponse(w, JsonResponse{ ErrorPayload{ true, "UNAUTHORIZED" }}, 403)
 	return
 }
 
@@ -102,14 +104,7 @@ func handleNewClient(w http.ResponseWriter, r *http.Request) {
 
 	for _, v := range HumbleClientsStorage {
 		if v.Phone == payload.Phone {
-			js, err := json.Marshal(ErrorPayload{ true, "NUMBER_ALREADY_REGISTERED" })
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(400)
-			w.Write(js)
+			sendJsonResponse(w, JsonResponse{ ErrorPayload{ true, "NUMBER_ALREADY_REGISTERED" }}, 400)
 			return
 		}
 	}
@@ -118,14 +113,7 @@ func handleNewClient(w http.ResponseWriter, r *http.Request) {
 	client := Client{ newClientId, payload.Phone, payload.Pin }
 	HumbleClientsStorage = append(HumbleClientsStorage, client)
 
-	js, err := json.Marshal(client)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	w.Write(js)
+	sendJsonResponse(w, JsonResponse{ client }, 200)
 	return
 }
 

@@ -9,9 +9,11 @@ import (
 )
 
 type Client struct {
+type Transfer struct {
 	Id int
-	Phone string
-	Pin string
+	Amount int
+	ClientId int
+	CreatedBy int
 }
 
 type NewClientRequestPayload struct {
@@ -47,6 +49,7 @@ type ErrorPayload struct {
 }
 
 var HumbleClientsStorage []Client
+var HumbleTransfersStorage []Transfer
 
 func sendJsonResponse(w http.ResponseWriter, response JsonResponse, httpCode int) {
 	js, err := json.Marshal(response.Payload)
@@ -128,6 +131,10 @@ func handleNewClient(w http.ResponseWriter, r *http.Request) {
 	newClientId := len(HumbleClientsStorage) + 1
 	client := Client{ newClientId, payload.Phone, payload.Pin }
 	HumbleClientsStorage = append(HumbleClientsStorage, client)
+
+	newClientTransferId := len(HumbleTransfersStorage) + 1
+	transfer := Transfer{ newClientTransferId, 1000000, newClientId, 0 }
+	HumbleTransfersStorage = append(HumbleTransfersStorage, transfer)
 
 	mockJson := `{ "id":"` + strconv.Itoa(client.Id) + `", "phone":"` + client.Phone + `", "pin":"` + client.Pin + `" }`
 	token := b64.URLEncoding.EncodeToString([]byte(mockJson))

@@ -18,6 +18,11 @@ type NewClientPayload struct {
 	Retyped_pin string
 }
 
+type NewLoginPayload struct {
+	Phone string
+	Pin string
+}
+
 type ErrorPayload struct {
 	Error bool `json:"error"`
 	ErrorCode string `json:"error_code"`
@@ -46,6 +51,40 @@ func handleRootPath(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleNewLogin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "404 not found", http.StatusNotFound)
+		return
+	}
+
+	var payload NewLoginPayload
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		http.Error(w, "400 bad request", http.StatusBadRequest)
+	}
+
+	for _, v := range HumbleClientsStorage {
+		if v.Phone == payload.Phone && v.Pin == payload.Pin {
+			js, err := json.Marshal(v)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(200)
+			w.Write(js)
+			return
+		}
+	}
+
+	js, err := json.Marshal(ErrorPayload{ true, "UNAUTHORIZED" })
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	w.Write(js)
+	return
 }
 
 func handleNewClient(w http.ResponseWriter, r *http.Request) {

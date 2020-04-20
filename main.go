@@ -17,10 +17,10 @@ type Client struct {
 }
 
 type Transfer struct {
-	Id int
-	Amount int
-	ClientId int
-	CreatedBy int
+	Id int `json:"id"`
+	Amount int `json:"amount"`
+	ClientId int `json:"client_id"`
+	CreatedBy int `json:"created_by"`
 }
 
 type NewClientRequestPayload struct {
@@ -170,17 +170,17 @@ func handleGetBalance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	amount := 0
+	transfers := []Transfer{}
 	for _, v := range HumbleTransfersStorage {
-		if v.ClientId == client.Id {
-			amount += v.Amount
-		}
-		if v.CreatedBy == client.Id {
-			amount -= v.Amount
+		if v.ClientId == client.Id || v.CreatedBy == client.Id {
+			if v.CreatedBy == client.Id {
+				v.Amount = v.Amount * -1
+			}
+			v.Amount = v.Amount / 100
+			amount  += v.Amount
+			transfers = append(transfers, v)
 		}
 	}
-	amount = amount / 100
-
-	transfers := []Transfer{}
 
 	sendJsonResponse(w, JsonResponse{ BalancePayload{ false, amount, transfers } }, 200)
 }

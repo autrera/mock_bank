@@ -1,12 +1,13 @@
 package main
 
 import (
-	"net/http"
-	"io/ioutil"
-	"encoding/json"
 	b64 "encoding/base64"
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
 	"strconv"
 	"strings"
+	"time"
 	// "fmt"
 )
 
@@ -17,10 +18,11 @@ type Client struct {
 }
 
 type Transfer struct {
-	Id int `json:"id"`
-	Amount int `json:"amount"`
-	ClientId int `json:"client_id"`
+	Id        int `json:"id"`
+	Amount    int `json:"amount"`
+	ClientId  int `json:"client_id"`
 	CreatedBy int `json:"created_by"`
+	CreatedAt string `json:"created_at"`
 }
 
 type NewClientRequestPayload struct {
@@ -41,9 +43,15 @@ type NewLoginRequestPayload struct {
 }
 
 type NewLoginResponsePayload struct {
-	Error bool `json:"error"`
-	ClientId int `json:"client_id"`
-	Token string `json:"token"`
+	Error    bool   `json:"error"`
+	ClientId int    `json:"client_id"`
+	Token    string `json:"token"`
+}
+
+type NewTransferRequestPayload struct {
+	Amount int `json:"amount,string"`
+	Phone  string `json:"phone"`
+	Pin    string `json:"pin"`
 }
 
 type JsonResponse struct {
@@ -156,6 +164,39 @@ func handleNewClient(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleNewTransfers(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+	decodedString, _ := b64.URLEncoding.DecodeString(token)
+
+	var client Client
+	err := json.NewDecoder(strings.NewReader(string(decodedString))).Decode(&client)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var newTransferRequest NewTransferRequestPayload
+	err = json.NewDecoder(r.Body).Decode(&newTransferRequest)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var clientToReceiveTransfer Client
+	for _, v := range HumbleClientsStorage {
+		if v.Phone == newTransferRequest.Phone {
+			clientToReceiveTransfer = v
+		}
+	}
+
+	if clientToReceiveTransfer.Phone == "" {
+	}
+
+	newTransferId := len(HumbleTransfersStorage) + 1
+	newTransfer := Transfer{newTransferId, newTransferRequest.Amount * 100, clientToReceiveTransfer.Id, client.Id, time.Now().Format(time.UnixDate)}
+	HumbleTransfersStorage = append(HumbleTransfersStorage, newTransfer)
+
+	sendJsonResponse(w, JsonResponse{newTransfer}, 200)
+	return
 }
 
 func handleGetBalance(w http.ResponseWriter, r *http.Request) {
@@ -177,12 +218,13 @@ func handleGetBalance(w http.ResponseWriter, r *http.Request) {
 				v.Amount = v.Amount * -1
 			}
 			v.Amount = v.Amount / 100
-			amount  += v.Amount
+			amount += v.Amount
 			transfers = append(transfers, v)
 		}
 	}
 
-	sendJsonResponse(w, JsonResponse{ BalancePayload{ false, amount, transfers } }, 200)
+	sendJsonResponse(w, JsonResponse{BalancePayload{false, amount, transfers}}, 200)
+	return
 }
 
 func main() {

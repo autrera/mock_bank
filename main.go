@@ -12,34 +12,34 @@ import (
 )
 
 type Client struct {
-	Id int `json:"id,string"`
+	Id    int    `json:"id,string"`
 	Phone string `json:"phone"`
-	Pin string `json:"pin"`
+	Pin   string `json:"pin"`
 }
 
 type Transfer struct {
-	Id        int `json:"id"`
-	Amount    int `json:"amount"`
-	ClientId  int `json:"client_id"`
-	CreatedBy int `json:"created_by"`
+	Id        int    `json:"id"`
+	Amount    int    `json:"amount"`
+	ClientId  int    `json:"client_id"`
+	CreatedBy int    `json:"created_by"`
 	CreatedAt string `json:"created_at"`
 }
 
 type NewClientRequestPayload struct {
-	Phone string
-	Pin string
+	Phone       string
+	Pin         string
 	Retyped_pin string
 }
 
 type NewClientResponsePayload struct {
-	Error bool `json:"error"`
-	ClientId int `json:"client_id"`
-	Token string `json:"token"`
+	Error    bool   `json:"error"`
+	ClientId int    `json:"client_id"`
+	Token    string `json:"token"`
 }
 
 type NewLoginRequestPayload struct {
 	Phone string
-	Pin string
+	Pin   string
 }
 
 type NewLoginResponsePayload struct {
@@ -49,7 +49,7 @@ type NewLoginResponsePayload struct {
 }
 
 type NewTransferRequestPayload struct {
-	Amount int `json:"amount,string"`
+	Amount int    `json:"amount,string"`
 	Phone  string `json:"phone"`
 	Pin    string `json:"pin"`
 }
@@ -59,14 +59,14 @@ type JsonResponse struct {
 }
 
 type ErrorPayload struct {
-	Error bool `json:"error"`
+	Error     bool   `json:"error"`
 	ErrorCode string `json:"error_code"`
 }
 
 type BalancePayload struct {
-	Error bool `json:"error"`
-	Balance int `json:"balance"`
-	Transfers []Transfer `json:"transfers"` 
+	Error     bool       `json:"error"`
+	Balance   int        `json:"balance"`
+	Transfers []Transfer `json:"transfers"`
 }
 
 var HumbleClientsStorage []Client
@@ -120,12 +120,12 @@ func handleNewLogin(w http.ResponseWriter, r *http.Request) {
 		if v.Phone == payload.Phone && v.Pin == payload.Pin {
 			mockJson := `{ "id":"` + strconv.Itoa(v.Id) + `", "phone":"` + v.Phone + `", "pin":"` + v.Pin + `" }`
 			token := b64.URLEncoding.EncodeToString([]byte(mockJson))
-			sendJsonResponse(w, JsonResponse{ NewLoginResponsePayload{ false, v.Id, token } }, 200)
+			sendJsonResponse(w, JsonResponse{NewLoginResponsePayload{false, v.Id, token}}, 200)
 			return
 		}
 	}
 
-	sendJsonResponse(w, JsonResponse{ ErrorPayload{ true, "UNAUTHORIZED" }}, 403)
+	sendJsonResponse(w, JsonResponse{ErrorPayload{true, "UNAUTHORIZED"}}, 403)
 	return
 }
 
@@ -144,22 +144,22 @@ func handleNewClient(w http.ResponseWriter, r *http.Request) {
 
 	for _, v := range HumbleClientsStorage {
 		if v.Phone == payload.Phone {
-			sendJsonResponse(w, JsonResponse{ ErrorPayload{ true, "NUMBER_ALREADY_REGISTERED" }}, 400)
+			sendJsonResponse(w, JsonResponse{ErrorPayload{true, "NUMBER_ALREADY_REGISTERED"}}, 400)
 			return
 		}
 	}
 
 	newClientId := len(HumbleClientsStorage) + 1
-	client := Client{ newClientId, payload.Phone, payload.Pin }
+	client := Client{newClientId, payload.Phone, payload.Pin}
 	HumbleClientsStorage = append(HumbleClientsStorage, client)
 
 	newClientTransferId := len(HumbleTransfersStorage) + 1
-	transfer := Transfer{ newClientTransferId, 1000000, newClientId, 0 }
+	transfer := Transfer{newClientTransferId, 1000000, newClientId, 0, time.Now().Format(time.UnixDate)}
 	HumbleTransfersStorage = append(HumbleTransfersStorage, transfer)
 
 	mockJson := `{ "id":"` + strconv.Itoa(client.Id) + `", "phone":"` + client.Phone + `", "pin":"` + client.Pin + `" }`
 	token := b64.URLEncoding.EncodeToString([]byte(mockJson))
-	sendJsonResponse(w, JsonResponse{ NewClientResponsePayload{ false, client.Id, token } }, 200)
+	sendJsonResponse(w, JsonResponse{NewClientResponsePayload{false, client.Id, token}}, 200)
 	return
 }
 
